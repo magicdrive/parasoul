@@ -1,1 +1,110 @@
 #! /bin/bash
+
+
+
+
+
+
+
+
+
+
+
+
+optspec=":j:m:c:d:F:-:hvVlsq"
+while getopts "$optspec" optchar; do
+    case "${optchar}" in
+        -)
+            case "${OPTARG}" in
+                help)
+                    exit 1
+                    ;;
+                version)
+                    exit 1
+                    ;;
+                delimiter)
+                    exit 1
+                    ;;
+                pipe)
+                    exit 1
+                    ;;
+                replace)
+                    exit 1
+                    ;;
+                list)
+                    exit 1
+                    ;;
+                jobs)
+                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    if [[ ${val} =~ ^[[:digit:]]+$ ]]; then
+                        PARASOUL_DEAULT_JOBS="${val}"
+                    else
+                        echo "Unknown option --jobs ${val}" >&2
+                        exit 1
+                    fi
+                    ;;
+                silent)
+                    PARASOUL_DEAULT_SILENT_MODE="TRUE"
+                    ;;
+                verbose)
+                    PARASOUL_DEAULT_SILENT_MODE="FALSE"
+                    ;;
+                *)
+                    echo "Unknown option --${OPTARG}" >&2
+                    exit 1
+                    ;;
+            esac;;
+        h)
+            exit 1
+            ;;
+        V)
+            exit 1
+            ;;
+        d)
+            exit 1
+            ;;
+        p)
+            exit 1
+            ;;
+        I)
+            exit 1
+            ;;
+        l)
+            exit 1
+            ;;
+        j)
+            if [[ ${OPTARG} =~ ^[[:digit:]]+$ ]]; then
+                PARASOUL_DEAULT_JOBS="${OPTARG}"
+            else
+                echo "Unknown option -j ${OPTARG}" >&2
+                exit 1
+            fi
+            ;;
+        d)
+            exit 1
+            ;;
+        q)
+            exit 1
+            ;;
+        v)
+            exit 1
+            ;;
+        *)
+            if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
+                echo "Non-option argument: '-${OPTARG}'" >&2
+            fi
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
+
+PARASOUL_EXEC_CMD=$@
+
+if [[ -z ${PARASOUL_EXEC_CMD} ]];then
+    exit 1
+fi
+
+parasoul::main && exit 0
+
