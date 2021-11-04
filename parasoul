@@ -1,13 +1,28 @@
 #! /bin/bash
 
+export PARASOUL_DEAULT_LIST_DELIMITER="${PARASOUL_DEAULT_LIST_DELIMITER:-${IFS}}"
+export PARASOUL_DEAULT_REPLACE_TOKEN="${PARASOUL_DEAULT_REPLACE_TOKEN:-"{}"}"
+export PARASOUL_DEAULT_LIST_EACH_SLICE="${PARASOUL_DEAULT_LIST_EACH_SLICE:-"1"}"
+export PARASOUL_DEAULT_JOBS="${PARASOUL_DEAULT_JOBS:-"1"}"
+export PARASOUL_DEAULT_QUIET_MODE="${PARASOUL_DEAULT_QUIET_MODE:-"0"}"
 
 
+parasoul::list() {
+    PARASOUL_EXEC_LIST=${PARASOUL_EXEC_LIST:-""}
+    if [ -p /dev/stdin ]; then
+        ## pipe
+        PARASOUL_EXEC_LIST="$(cat -)"
+    fi
 
+    if [[ ${PARASOUL_EXEC_LIST} = "" ]];then
+        echo "Error: list not given." >&2
+        exit 1
+    fi
+}
 
-
-
-
-
+parasoul::main() {
+    parasoul::list
+}
 
 
 
@@ -43,11 +58,8 @@ while getopts "$optspec" optchar; do
                         exit 1
                     fi
                     ;;
-                silent)
-                    PARASOUL_DEAULT_SILENT_MODE="TRUE"
-                    ;;
-                verbose)
-                    PARASOUL_DEAULT_SILENT_MODE="FALSE"
+                quiet)
+                    PARASOUL_DEAULT_QUIET_MODE="0"
                     ;;
                 *)
                     echo "Unknown option --${OPTARG}" >&2
