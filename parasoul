@@ -21,9 +21,11 @@ OPTIONS:
 
   * [-h|--help]                             # Show this help.
   * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
-  * [-V|--version]                          # Show parasoul version info.
+  * [-v|--version]                          # Show parasoul version info.
   * [-p|--pipe]                             # Pipe mode
   * [-d|--delimiter]                        # Specify list delimiter (default: IFS)
+  * [-I|--replace-token]                    # Specify replace token
+  * [-N|--number-of-args]                   # Specify number of lists consumed in one process (default: 1)
   * [-l|--list]                             # List
   * [-q|--quiet]                            # Quiet mode
 
