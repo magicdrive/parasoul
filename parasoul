@@ -6,6 +6,40 @@ export PARASOUL_DEAULT_LIST_EACH_SLICE="${PARASOUL_DEAULT_LIST_EACH_SLICE:-"1"}"
 export PARASOUL_DEAULT_JOBS="${PARASOUL_DEAULT_JOBS:-"1"}"
 export PARASOUL_DEAULT_QUIET_MODE="${PARASOUL_DEAULT_QUIET_MODE:-"0"}"
 
+trap parasoul::exit HUP INT QUIT TERM
+
+parasoul::version() {
+    echo "parasoul v0.0.1"
+}
+parasoul::help() {
+cat << HELP >&2
+USAGE:
+
+  parasoul [OPTIONS] -- [CMDTEMPLATE] # Run the command in parallel
+
+OPTIONS:
+
+  * [-h|--help]                             # Show this help.
+  * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
+  * [-V|--version]                          # Show parasoul version info.
+  * [-p|--pipe]                             # Pipe mode
+  * [-l|--list]                             # List
+  * [-q|--quiet]                            # Quiet mode
+
+HELP
+}
+
+parasoul::exit() {
+    parasoul::reccursive_ps_killer $$
+}
+
+parasoul::reccursive_ps_killer() {
+    local target_ps=$1
+    for x in $(ps --ppid ${target_ps} --no-heading | awk '{ print $1 }'); do
+        parasoul::reccursive_ps_killer "${x}"
+    done
+    kill -9 ${target_ps}
+}
 
 parasoul::list() {
     PARASOUL_EXEC_LIST=${PARASOUL_EXEC_LIST:-""}
@@ -20,10 +54,48 @@ parasoul::list() {
     fi
 }
 
-parasoul::main() {
-    parasoul::list
+parasoul::job_pack() {
+    local repo=${TARGET_REPOSITORIES[0]}
+    TARGET_REPOSITORIES=("${TARGET_REPOSITORIES[@]:1}")
+    if [[ -d ${repo} ]];then
+        exec {FD}< <(parasoul::execute "${repo}")
+        FD_LIST=(${FD_LIST[@]} ${FD})
+    fi
 }
 
+parasoul::main() {
+    FD_LIST=()
+
+    parasoul::command
+    parasoul::color
+    parasoul::find_targets
+
+    if [[ ${PARASOUL_DEAULT_SILENT_MODE} = FALSE ]];then
+        echo "start parallel: ${PARASOUL_EXEC_CMD} ";
+        echo;
+    fi
+
+    while true; do
+        for x in $(seq "${PARASOUL_DEAULT_JOBS}"); do
+            parasoul::job_pack
+        done
+        wait
+
+        if [[ ${PARASOUL_DEAULT_SILENT_MODE} = TRUE ]];then
+            for x in ${FD_LIST[@]}; do
+                : <&${x}
+            done
+        else
+            for x in ${FD_LIST[@]}; do
+                cat <&${x}
+            done
+        fi
+
+        if [[ -z ${TARGET_REPOSITORIES} ]];then
+            break
+        fi
+    done
+}
 
 
 optspec=":j:m:c:d:F:-:hvVlsq"
