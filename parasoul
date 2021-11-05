@@ -23,6 +23,7 @@ OPTIONS:
   * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
   * [-V|--version]                          # Show parasoul version info.
   * [-p|--pipe]                             # Pipe mode
+  * [-d|--delimiter]                        # Specify list delimiter (default: IFS)
   * [-l|--list]                             # List
   * [-q|--quiet]                            # Quiet mode
 
