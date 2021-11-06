@@ -11,6 +11,7 @@ trap parasoul::exit HUP INT QUIT TERM
 parasoul::version() {
     echo "parasoul v0.0.1"
 }
+
 parasoul::help() {
 cat << HELP >&2
 USAGE:
@@ -25,7 +26,6 @@ OPTIONS:
   * [-p|--pipe]                             # Pipe mode
   * [-d|--delimiter]                        # Specify list delimiter (default: IFS)
   * [-I|--replace-token]                    # Specify replace token
-  * [-l|--list]                             # List
   * [-q|--quiet]                            # Quiet mode
 
 HELP
@@ -110,25 +110,25 @@ while getopts "$optspec" optchar; do
         -)
             case "${OPTARG}" in
                 help)
-                    exit 1
+                    parasoul::help; exit 1
                     ;;
                 version)
-                    exit 1
+                    parasoul::version; exit 1
                     ;;
                 delimiter)
-                    exit 1
+                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    PARASOUL_DEAULT_LIST_DELIMITER="${val}"
                     ;;
                 pipe)
-                    exit 1
+                    PARASOUL_PIPE_MODE=1
                     ;;
                 replace-token)
-                    exit 1
+                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    PARASOUL_DEAULT_REPLACE_TOKEN=${val}
                     ;;
-                number-of-args)
-                    exit 1
-                    ;;
-                list)
-                    exit 1
+                command)
+                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+                    PARASOUL_EXEC_CMD="${val}"
                     ;;
                 jobs)
                     val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
@@ -140,7 +140,7 @@ while getopts "$optspec" optchar; do
                     fi
                     ;;
                 quiet)
-                    PARASOUL_DEAULT_QUIET_MODE="0"
+                    PARASOUL_DEAULT_QUIET_MODE=1
                     ;;
                 *)
                     echo "Unknown option --${OPTARG}" >&2
@@ -148,22 +148,22 @@ while getopts "$optspec" optchar; do
                     ;;
             esac;;
         h)
-            exit 1
+            parasoul::help; exit 1
             ;;
-        V)
-            exit 1
+        v)
+            parasoul::version; exit 1
             ;;
         d)
-            exit 1
+            PARASOUL_DEAULT_LIST_DELIMITER="${OPTARG}"
             ;;
         p)
-            exit 1
+            PARASOUL_PIPE_MODE=1
             ;;
         I)
-            exit 1
+            PARASOUL_DEAULT_REPLACE_TOKEN=${OPTARG}
             ;;
-        l)
-            exit 1
+        e)
+            PARASOUL_EXEC_CMD="${val}"
             ;;
         j)
             if [[ ${OPTARG} =~ ^[[:digit:]]+$ ]]; then
@@ -173,13 +173,7 @@ while getopts "$optspec" optchar; do
                 exit 1
             fi
             ;;
-        d)
-            exit 1
-            ;;
         q)
-            exit 1
-            ;;
-        v)
             exit 1
             ;;
         *)
@@ -193,9 +187,10 @@ done
 
 shift $((OPTIND - 1))
 
-PARASOUL_EXEC_CMD=$@
+PARASOUL_EXEC_LIST=$@
+parasoul::generate::list "${PARASOUL_EXEC_LIST}"
 
-if [[ -z ${PARASOUL_EXEC_CMD} ]];then
+if [[ -z ${PARASOUL_EXEC_CMD} ]] || [[ -z ${PARASOUL_EXEC_LIST} ]];then
     exit 1
 fi
 
