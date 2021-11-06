@@ -1,8 +1,8 @@
 #! /bin/bash
 
+export PARASOUL_ORGINAL_REPLACE_TOKEN="{}"
 export PARASOUL_DEAULT_LIST_DELIMITER="${PARASOUL_DEAULT_LIST_DELIMITER:-${IFS}}"
-export PARASOUL_DEAULT_REPLACE_TOKEN="${PARASOUL_DEAULT_REPLACE_TOKEN:-"{}"}"
-export PARASOUL_DEAULT_LIST_EACH_SLICE="${PARASOUL_DEAULT_LIST_EACH_SLICE:-"1"}"
+export PARASOUL_DEAULT_REPLACE_TOKEN="${PARASOUL_DEAULT_REPLACE_TOKEN:-"${PARASOUL_ORGINAL_REPLACE_TOKEN}"}"
 export PARASOUL_DEAULT_JOBS="${PARASOUL_DEAULT_JOBS:-"1"}"
 export PARASOUL_DEAULT_QUIET_MODE="${PARASOUL_DEAULT_QUIET_MODE:-"0"}"
 
@@ -25,7 +25,6 @@ OPTIONS:
   * [-p|--pipe]                             # Pipe mode
   * [-d|--delimiter]                        # Specify list delimiter (default: IFS)
   * [-I|--replace-token]                    # Specify replace token
-  * [-N|--number-of-args]                   # Specify number of lists consumed in one process (default: 1)
   * [-l|--list]                             # List
   * [-q|--quiet]                            # Quiet mode
 
@@ -57,11 +56,17 @@ parasoul::list() {
     fi
 }
 
+parasoul::build::command() {
+    arg="$1"
+    echo ${PARASOUL_EXEC_CMD} | perl -p -e "s/${PARASOUL_ORGINAL_REPLACE_TOKEN}/${arg}/g"
+}
+
+
 parasoul::job_pack() {
-    local repo=${TARGET_REPOSITORIES[0]}
-    TARGET_REPOSITORIES=("${TARGET_REPOSITORIES[@]:1}")
-    if [[ -d ${repo} ]];then
-        exec {FD}< <(parasoul::execute "${repo}")
+    local item=${PARASOUL_EXEC_LIST[0]}
+    PARASOUL_EXEC_LIST=("${PARASOUL_EXEC_LIST[@]:1}")
+    if [[ -d ${item} ]];then
+        exec {FD}< <($(parasoul::build::command $item) > 2>&1)
         FD_LIST=(${FD_LIST[@]} ${FD})
     fi
 }
@@ -70,8 +75,6 @@ parasoul::main() {
     FD_LIST=()
 
     parasoul::command
-    parasoul::color
-    parasoul::find_targets
 
     if [[ ${PARASOUL_DEAULT_SILENT_MODE} = FALSE ]];then
         echo "start parallel: ${PARASOUL_EXEC_CMD} ";
@@ -119,6 +122,9 @@ while getopts "$optspec" optchar; do
                     exit 1
                     ;;
                 replace-token)
+                    exit 1
+                    ;;
+                number-of-args)
                     exit 1
                     ;;
                 list)
