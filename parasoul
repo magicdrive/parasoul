@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 ORIGIN_IFS="$IFS"
 PARASOUL_ORIGINAL_REPLACE_TOKEN="{}"
