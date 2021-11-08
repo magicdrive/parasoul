@@ -1,12 +1,59 @@
 #! /usr/bin/env bash
 
+#
+# parasoul -- Yet Another shell tool for executing jobs in parallel.
+#
+# USAGE:
+#
+#   parasoul [OPTIONS] -- [LIST] # Yet Another shell tool for executing jobs in parallel.
+#
+# OPTIONS:
+#
+#   * [-h|--help]                             # Show this help.
+#   * [-v|--version]                          # Show parasoul version info.
+#   * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
+#   * [-d|--delimiter] delimiter              # Specify list delimiter (default: [\\n|\\t|\\s])
+#   * [-e|--command] command                  # Exec command template. (require: true)
+#   * [-I|--replace-token]                    # Specify replace token (default: {})
+#   * [-p|--pipe]                             # Force Pipe mode. (default: false)
+#   * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
+#   * [-q|--quiet]                            # Quiet mode. (default: false)
+#
+# HELP
+#
+# MIT License
+#
+# Copyright (c) 2021 Hiroshi IKEGAMI
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+#
+
 ORIGIN_IFS="$IFS"
 PARASOUL_ORIGINAL_REPLACE_TOKEN="{}"
 
-export PARASOUL_DEAULT_LIST_DELIMITER="${PARASOUL_DEAULT_LIST_DELIMITER:-"(?:[\\n|\\t|\\s]+)"}"
-export PARASOUL_DEAULT_REPLACE_TOKEN="${PARASOUL_DEAULT_REPLACE_TOKEN:-"${PARASOUL_ORIGINAL_REPLACE_TOKEN}"}"
-export PARASOUL_DEAULT_JOBS="${PARASOUL_DEAULT_JOBS:-"2"}"
-export PARASOUL_DEAULT_QUIET_MODE="${PARASOUL_DEAULT_QUIET_MODE:-"0"}"
+export PARASOUL_DEFAULT_LIST_DELIMITER="${PARASOUL_DEFAULT_LIST_DELIMITER:-"(?:[\\n|\\t|\\s]+)"}"
+export PARASOUL_DEFAULT_REPLACE_TOKEN="${PARASOUL_DEFAULT_REPLACE_TOKEN:-"${PARASOUL_ORIGINAL_REPLACE_TOKEN}"}"
+export PARASOUL_DEFAULT_JOBS="${PARASOUL_DEFAULT_JOBS:-"2"}"
+export PARASOUL_DEFAULT_PIPE_MODE="${PARASOUL_DEFAULT_PIPE_MODE:-"0"}"
+export PARASOUL_DEFAULT_SEQUENTIAL_MODE="${PARASOUL_DEFAULT_SEQUENTIAL_MODE:-"0"}"
+export PARASOUL_DEFAULT_QUIET_MODE="${PARASOUL_DEFAULT_QUIET_MODE:-"0"}"
 
 trap parasoul::exit HUP INT QUIT TERM
 
@@ -18,17 +65,19 @@ parasoul::help() {
 cat << HELP >&2
 USAGE:
 
-  parasoul [OPTIONS] -- [CMDTEMPLATE] # Run the command in parallel
+  parasoul [OPTIONS] -- [LIST] # Run the command in parallel
 
 OPTIONS:
 
   * [-h|--help]                             # Show this help.
-  * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
   * [-v|--version]                          # Show parasoul version info.
-  * [-p|--pipe]                             # Pipe mode
-  * [-e|--command]                          # Specify list delimiter (default: \$IFS)
-  * [-I|--replace-token]                    # Specify replace token
-  * [-q|--quiet]                            # Quiet mode
+  * [-j|--jobs] job-count                   # Execute in parallel with \`job-count\`
+  * [-d|--delimiter] delimiter              # Specify list delimiter (default: [\\n|\\t|\\s])
+  * [-e|--command] command                  # Exec command template. (require: true)
+  * [-I|--replace-token]                    # Specify replace token (default: {})
+  * [-p|--pipe]                             # Force Pipe mode. (default: false)
+  * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
+  * [-q|--quiet]                            # Quiet mode. (default: false)
 
 HELP
 }
@@ -47,7 +96,11 @@ parasoul::reccursive_ps_killer() {
 
 parasoul::list::generate() {
     PARASOUL_EXEC_LIST_STR="$@"
-    if [ -p /dev/stdin ]; then
+    if [[ -n $PARASOUL_EXEC_LIST_STR ]] && [[ $PARASOUL_PIPE_MODE = "1" ]];then
+        PARASOUL_EXEC_LIST_STR=""
+        echo "The input from pipe is adopted." >&2
+    fi
+    if [[ -z $PARASOUL_EXEC_LIST_STR ]] && [ -p /dev/stdin ]; then
         ## pipe
         PARASOUL_EXEC_LIST_STR="$(cat -)"
     fi
@@ -56,31 +109,21 @@ parasoul::list::generate() {
         echo "Error: list not given." >&2
         exit 1
     fi
-    if [[ ! ${PARASOUL_DEAULT_LIST_DELIMITER} = "," ]];then
+    if [[ ! ${PARASOUL_DEFAULT_LIST_DELIMITER} = "," ]];then
         PARASOUL_EXEC_LIST_STR=$(echo ${PARASOUL_EXEC_LIST_STR} | \
             perl -p -e 's/,/{{parasoul-comma}}/g' | \
-            perl -p -e "s/${PARASOUL_DEAULT_LIST_DELIMITER}/,/g")
+            perl -p -e "s/${PARASOUL_DEFAULT_LIST_DELIMITER}/,/g")
     fi
     IFS="," PARASOUL_EXEC_LIST=( ${PARASOUL_EXEC_LIST_STR} )
     export IFS="${ORIGIN_IFS}"
 }
 
 
-list_dumper() {
-    echo "------dump start"
-    i=0
-    for e in ${PARASOUL_EXEC_LIST[@]}; do
-        echo "array[$i] = ${e}"
-        let i++
-    done
-    echo "------dump end"
-}
-
 parasoul::exec::command() {
     local arg="$1"
     local cmd=$(echo ${PARASOUL_EXEC_CMD} | \
         perl -p -e 's/{{parasoul-comma}}/,/g'| \
-        perl -p -e "s/${PARASOUL_DEAULT_REPLACE_TOKEN}/${arg}/g" | \
+        perl -p -e "s/${PARASOUL_DEFAULT_REPLACE_TOKEN}/${arg}/g" | \
         perl -p -e 's/{{parasoul-comma}}/,/g' )
      parasoul::execute $cmd
 }
@@ -92,7 +135,6 @@ parasoul::execute() {
 
 parasoul::job_pack() {
     local item=${PARASOUL_EXEC_LIST[0]}
-    #IFS="," PARASOUL_EXEC_LIST=( ${PARASOUL_EXEC_LIST[@]:1} )
 
     IFS="," PARASOUL_EXEC_LIST=( $(IFS=,; echo "${PARASOUL_EXEC_LIST[*]:1}") )
     export IFS="${ORIGIN_IFS}"
@@ -104,18 +146,13 @@ parasoul::job_pack() {
 
 parasoul::main() {
     FD_LIST=()
-    if [[ ! ${PARASOUL_DEAULT_SILENT_MODE} = 1 ]];then
-        echo "start parallel: ${PARASOUL_EXEC_CMD} ";
-        echo;
-    fi
-
     while true; do
-        for x in $(seq "${PARASOUL_DEAULT_JOBS}"); do
+        for x in $(seq "${PARASOUL_DEFAULT_JOBS}"); do
             parasoul::job_pack
         done
         wait
 
-        if [[ ${PARASOUL_DEAULT_SILENT_MODE} = 1 ]];then
+        if [[ ${PARASOUL_DEFAULT_QUIET_MODE} = 1 ]];then
             for x in ${FD_LIST[@]}; do
                 : <&${x}
             done
@@ -132,7 +169,7 @@ parasoul::main() {
 }
 
 
-optspec=":j:m:c:d:F:-:hvVlsq"
+optspec=":j:e:d:I:j:-:hvspq"
 while getopts "$optspec" optchar; do
     case "${optchar}" in
         -)
@@ -145,14 +182,11 @@ while getopts "$optspec" optchar; do
                     ;;
                 delimiter)
                     val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
-                    PARASOUL_DEAULT_LIST_DELIMITER="${val}"
-                    ;;
-                pipe)
-                    PARASOUL_PIPE_MODE="1"
+                    PARASOUL_DEFAULT_LIST_DELIMITER="${val}"
                     ;;
                 replace-token)
                     val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
-                    PARASOUL_DEAULT_REPLACE_TOKEN="${val}"
+                    PARASOUL_DEFAULT_REPLACE_TOKEN="${val}"
                     ;;
                 command)
                     val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
@@ -161,14 +195,23 @@ while getopts "$optspec" optchar; do
                 jobs)
                     val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
                     if [[ ${val} =~ ^[[:digit:]]+$ ]]; then
-                        PARASOUL_DEAULT_JOBS="${val}"
+                        if [[ ! PARASOUL_DEFAULT_SEQUENTIAL_MODE = "1" ]];then
+                            PARASOUL_DEFAULT_JOBS="${val}"
+                        fi
                     else
                         echo "Unknown option --jobs ${val}" >&2
                         exit 1
                     fi
                     ;;
+                sequential)
+                    PARASOUL_DEFAULT_SEQUENTIAL_MODE="1"
+                    PARASOUL_DEFAULT_JOBS="1"
+                    ;;
+                pipe)
+                    PARASOUL_DEFAULT_PIPE_MODE="1"
+                    ;;
                 quiet)
-                    PARASOUL_DEAULT_QUIET_MODE="1"
+                    PARASOUL_DEFAULT_QUIET_MODE="1"
                     ;;
                 *)
                     echo "Unknown option --${OPTARG}" >&2
@@ -182,27 +225,33 @@ while getopts "$optspec" optchar; do
             parasoul::version; exit 1
             ;;
         d)
-            PARASOUL_DEAULT_LIST_DELIMITER="${OPTARG}"
-            ;;
-        p)
-            PARASOUL_PIPE_MODE="1"
+            PARASOUL_DEFAULT_LIST_DELIMITER="${OPTARG}"
             ;;
         I)
-            PARASOUL_DEAULT_REPLACE_TOKEN="${OPTARG}"
+            PARASOUL_DEFAULT_REPLACE_TOKEN="${OPTARG}"
             ;;
         e)
             PARASOUL_EXEC_CMD="${val}"
             ;;
         j)
             if [[ ${OPTARG} =~ ^[[:digit:]]+$ ]]; then
-                PARASOUL_DEAULT_JOBS="${OPTARG}"
+                if [[ ! PARASOUL_DEFAULT_SEQUENTIAL_MODE = "1" ]];then
+                    PARASOUL_DEFAULT_JOBS="${OPTARG}"
+                fi
             else
                 echo "Unknown option -j ${OPTARG}" >&2
                 exit 1
             fi
             ;;
+        s)
+            PARASOUL_DEFAULT_SEQUENTIAL_MODE="1"
+            PARASOUL_DEFAULT_JOBS="1"
+            ;;
+        p)
+            PARASOUL_DEFAULT_PIPE_MODE="1"
+            ;;
         q)
-            exit 1
+            PARASOUL_DEFAULT_QUIET_MODE="1"
             ;;
         *)
             if [ "$OPTERR" != 1 ] || [ "${optspec:0:1}" = ":" ]; then
