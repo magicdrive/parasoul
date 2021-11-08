@@ -56,9 +56,11 @@ parasoul::list::generate() {
         echo "Error: list not given." >&2
         exit 1
     fi
-    PARASOUL_EXEC_LIST_STR=$(echo ${PARASOUL_EXEC_LIST_STR} | \
-        perl -p -e 's/,/\[\[comma\]\]/g' | \
-        perl -p -e "s/${PARASOUL_DEAULT_LIST_DELIMITER}/,/g")
+    if [[ ! ${PARASOUL_DEAULT_LIST_DELIMITER} = "," ]];then
+        PARASOUL_EXEC_LIST_STR=$(echo ${PARASOUL_EXEC_LIST_STR} | \
+            perl -p -e 's/,/{{parasoul-comma}}/g' | \
+            perl -p -e "s/${PARASOUL_DEAULT_LIST_DELIMITER}/,/g")
+    fi
     IFS="," PARASOUL_EXEC_LIST=( ${PARASOUL_EXEC_LIST_STR} )
     export IFS="${ORIGIN_IFS}"
 }
@@ -77,8 +79,9 @@ list_dumper() {
 parasoul::exec::command() {
     local arg="$1"
     local cmd=$(echo ${PARASOUL_EXEC_CMD} | \
-        perl -p -e 's/\[\[comma\]\]/,/g'| \
-        perl -p -e "s/${PARASOUL_DEAULT_REPLACE_TOKEN}/${arg}/g" )
+        perl -p -e 's/{{parasoul-comma}}/,/g'| \
+        perl -p -e "s/${PARASOUL_DEAULT_REPLACE_TOKEN}/${arg}/g" | \
+        perl -p -e 's/{{parasoul-comma}}/,/g' )
      parasoul::execute $cmd
 }
 
