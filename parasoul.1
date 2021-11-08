@@ -25,6 +25,11 @@ OPTIONS:
   * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
   * [-q|--quiet]                            # Quiet mode. (default: false)
 
+ex)
+    parasoul --delimiter "@" --command "echo foo XXX" --replace-token "XXX" -- aaa@bbb@ccc@ddd
+
+    echo aaa bbb ccc | parasoul --command "echo foo XXX" --replace-token "XXX" --pipe
+
 .fi
 .RE
 
