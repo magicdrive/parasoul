@@ -19,8 +19,6 @@
 #   * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
 #   * [-q|--quiet]                            # Quiet mode. (default: false)
 #
-# HELP
-#
 # MIT License
 #
 # Copyright (c) 2021 Hiroshi IKEGAMI

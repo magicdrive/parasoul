@@ -1,14 +1,14 @@
-parasoul
-============
-
-NAME
-----
+.TH "PARASOUL" "1"
+.nh
+.SH NAME
+.PP
 parasoul - Yet Another shell tool for executing jobs in parallel.
 
-Usage
------
+.SH Usage
+.PP
+.RS
 
-```
+.nf
 USAGE:
 
   parasoul [OPTIONS] -- [LIST] # Yet Another shell tool for executing jobs in parallel.
@@ -18,47 +18,74 @@ OPTIONS:
   * [-h|--help]                             # Show this help.
   * [-v|--version]                          # Show parasoul version info.
   * [-j|--jobs] job-count                   # Execute in parallel with `job-count`
-  * [-d|--delimiter] delimiter              # Specify list delimiter (default: [\n|\t|\s])
+  * [-d|--delimiter] delimiter              # Specify list delimiter (default: [\\n|\\t|\\s])
   * [-e|--command] command                  # Exec command template. (require: true)
   * [-I|--replace-token]                    # Specify replace token (default: {})
   * [-p|--pipe]                             # Force Pipe mode. (default: false)
   * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
   * [-q|--quiet]                            # Quiet mode. (default: false)
-```
 
-Environments
------
+.fi
+.RE
 
-```
-PARASOUL_DEFAULT_LIST_DELIMITER  # Default use delimiter. (default: [\n|\t|\s])
+.SH Environments
+.PP
+.RS
+
+.nf
+PARASOUL_DEFAULT_LIST_DELIMITER  # Default use delimiter. (default: [\\n|\\t|\\s])
 PARASOUL_DEFAULT_REPLACE_TOKEN   # Default use replace-token. (default: {})
 PARASOUL_DEFAULT_JOBS            # Default use job-count. (default: 2)
 PARASOUL_DEFAULT_PIPE_MODE       # Pipe mode default switch (deault: 0 (off))
 PARASOUL_DEFAULT_SEQUENTIAL_MODE # Sequential mode default switch (deault: 0 (off))
 PARASOUL_DEFAULT_QUIET_MODED     # Quiet mode default switch (deault: 0 (off))
-```
 
+.fi
+.RE
+
+.PP
 Author
 
+.PP
 Copyright (c) 2021 Hiroshi IKEGAMI
 
+.PP
 MIT License
 
+.PP
 Permission is hereby granted, free of charge, to any person obtaining
+.br
 a copy of this software and associated documentation files (the
+.br
 "Software"), to deal in the Software without restriction, including
+.br
 without limitation the rights to use, copy, modify, merge, publish,
+.br
 distribute, sublicense, and/or sell copies of the Software, and to
+.br
 permit persons to whom the Software is furnished to do so, subject to
+.br
 the following conditions:
+.br
 
+.PP
 The above copyright notice and this permission notice shall be
+.br
 included in all copies or substantial portions of the Software.
+.br
 
+.PP
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+.br
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+.br
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+.br
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+.br
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+.br
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+.br
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+.br
