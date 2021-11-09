@@ -3,7 +3,7 @@ parasoul
 
 NAME
 ----
-parasoul - Yet Another shell tool for executing jobs in parallel.
+parasoul - Yet another shell tool for executing jobs in parallel.
 
 Usage
 -----
@@ -11,24 +11,24 @@ Usage
 ```
 USAGE:
 
-  parasoul [OPTIONS] -- [LIST] # Yet Another shell tool for executing jobs in parallel.
+  parasoul [--command] command [OPTIONS] -- [LIST] # Yet another shell tool for executing jobs in parallel.
 
 OPTIONS:
 
-  * [-h|--help]                             # Show this help.
-  * [-v|--version]                          # Show parasoul version info.
-  * [-j|--jobs] job-count                   # Execute in parallel with `job-count`
-  * [-d|--delimiter] delimiter              # Specify list delimiter (default: [\n|\t|\s])
-  * [-e|--command] command                  # Exec command template. (require: true)
-  * [-I|--replace-token]                    # Specify replace token (default: {})
-  * [-p|--pipe]                             # Force Pipe mode. (default: false)
-  * [-s|--sequential]                       # Force Sequential mode. (force set --jobs 1)
-  * [-q|--quiet]                            # Quiet mode. (default: false)
+  * [-h|--help]                # Show this help.
+  * [-v|--version]             # Show parasoul version info.
+  * [-j|--jobs] job-count      # Execute in parallel with `job-count`
+  * [-d|--delimiter] delimiter # Specify list delimiter (default: [\n|\t|\s])
+  * [-e|--command] command     # Exec command template. (require: true)
+  * [-I|--replace-token]       # Specify replace token (default: {})
+  * [-p|--pipe]                # Force Pipe mode. (default: false)
+  * [-s|--sequential]          # Force Sequential mode. (force set --jobs 1)
+  * [-q|--quiet]               # Quiet mode. (default: false)
 
 ex)
-    parasoul --delimiter "@" --command "echo foo XXX" --replace-token "XXX" -- aaa@bbb@ccc@ddd
+    parasoul --command "echo foo XXX" --delimiter "@" --replace-token "XXX" -- aaa@bbb@ccc@ddd
 
-    echo aaa bbb ccc | parasoul --command "echo foo XXX" --replace-token "XXX" --pipe
+    echo aaa bbb ccc | parasoul --command "echo bar XXX" --replace-token "XXX" --pipe
 ```
 
 Environments
